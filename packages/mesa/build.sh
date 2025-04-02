@@ -3,18 +3,18 @@ TERMUX_PKG_DESCRIPTION="An open-source implementation of the OpenGL specificatio
 TERMUX_PKG_LICENSE="MIT"
 TERMUX_PKG_LICENSE_FILE="docs/license.rst"
 TERMUX_PKG_MAINTAINER="@termux"
-TERMUX_PKG_VERSION="25.1.3"
-_LLVM_MAJOR_VERSION=$(. $TERMUX_SCRIPTDIR/packages/libllvm/build.sh; echo "${LLVM_MAJOR_VERSION}")
+TERMUX_PKG_VERSION="25.0.4"
+TERMUX_PKG_REVISION=1
+_LLVM_MAJOR_VERSION=$(. $TERMUX_SCRIPTDIR/packages/libllvm/build.sh; echo $LLVM_MAJOR_VERSION)
 _LLVM_MAJOR_VERSION_NEXT=$((_LLVM_MAJOR_VERSION + 1))
 TERMUX_PKG_SRCURL=https://archive.mesa3d.org/mesa-${TERMUX_PKG_VERSION}.tar.xz
-TERMUX_PKG_SHA256=ffcb6cadb5fd356d56008e6308641dfe4b2929f30139f6585436ca6e3cddba7f
+TERMUX_PKG_SHA256=76293cf4372ca4e4e73fd6c36c567b917b608a4db9d11bd2e33068199a7df04d
 TERMUX_PKG_AUTO_UPDATE=true
 TERMUX_PKG_DEPENDS="libandroid-shmem, libc++, libdrm, libglvnd, libllvm (<< ${_LLVM_MAJOR_VERSION_NEXT}), libwayland, libx11, libxext, libxfixes, libxshmfence, libxxf86vm, ncurses, vulkan-loader, zlib, zstd"
 TERMUX_PKG_SUGGESTS="mesa-dev"
 TERMUX_PKG_BUILD_DEPENDS="libwayland-protocols, libxrandr, llvm, llvm-tools, mlir, xorgproto"
-TERMUX_PKG_BREAKS="osmesa, osmesa-demos"
-TERMUX_PKG_CONFLICTS="libmesa, ndk-sysroot (<= 25b), osmesa"
-TERMUX_PKG_REPLACES="libmesa, osmesa"
+TERMUX_PKG_CONFLICTS="libmesa, ndk-sysroot (<= 25b)"
+TERMUX_PKG_REPLACES="libmesa"
 
 # FIXME: Set `shared-llvm` to disabled if possible
 TERMUX_PKG_EXTRA_CONFIGURE_ARGS="
@@ -30,15 +30,11 @@ TERMUX_PKG_EXTRA_CONFIGURE_ARGS="
 -Dllvm=enabled
 -Dshared-llvm=enabled
 -Dplatforms=x11,wayland
--Dgallium-drivers=llvmpipe,softpipe,virgl,zink
+-Dgallium-drivers=swrast,virgl,zink
+-Dosmesa=true
 -Dglvnd=enabled
 -Dxmlconfig=disabled
 "
-
-termux_pkg_auto_update() {
-	read -r latest < <(curl -fsSL "https://archive.mesa3d.org/" | sed -rn 's/.*mesa-([0-9]+(\.[0-9]+)*).*/\1/p' | sort -Vr);
-	termux_pkg_upgrade_version "${latest}"
-}
 
 termux_step_post_get_source() {
 	# Do not use meson wrap projects
@@ -49,6 +45,7 @@ termux_step_pre_configure() {
 	termux_setup_cmake
 
 	CPPFLAGS+=" -D__USE_GNU"
+	CPPFLAGS+=" -D__ANDROID_API__=$(getprop ro.build.version.sdk)"
 	LDFLAGS+=" -landroid-shmem"
 
 	_WRAPPER_BIN=$TERMUX_PKG_BUILDDIR/_wrapper/bin
@@ -62,6 +59,7 @@ termux_step_pre_configure() {
 		export LLVM_CONFIG="$TERMUX_PREFIX/bin/llvm-config"
 	fi
 	export PATH="$_WRAPPER_BIN:$PATH"
+	export LLVM_CONFIG="$TERMUX_PREFIX/bin/llvm-config"
 
 	local _vk_drivers="swrast"
 	if [ $TERMUX_ARCH = "arm" ] || [ $TERMUX_ARCH = "aarch64" ]; then
