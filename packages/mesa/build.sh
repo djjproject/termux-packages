@@ -49,6 +49,7 @@ termux_step_pre_configure() {
 	termux_setup_cmake
 
 	CPPFLAGS+=" -D__USE_GNU"
+    CPPFLAGS+=" -D__ANDROID_API__=$(getprop ro.build.version.sdk)"
 	LDFLAGS+=" -landroid-shmem"
 
 	_WRAPPER_BIN=$TERMUX_PKG_BUILDDIR/_wrapper/bin
@@ -62,6 +63,7 @@ termux_step_pre_configure() {
 		export LLVM_CONFIG="$TERMUX_PREFIX/bin/llvm-config"
 	fi
 	export PATH="$_WRAPPER_BIN:$PATH"
+    export LLVM_CONFIG="$TERMUX_PREFIX/bin/llvm-config"
 
 	local _vk_drivers="swrast"
 	local _opengl_drivers="llvmpipe,softpipe,virgl,zink"
